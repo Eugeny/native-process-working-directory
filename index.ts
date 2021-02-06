@@ -8,24 +8,27 @@ function getNative () {
   return native
 }
 
+function cleanupPath (path: string) {
+  if (!path) {
+    return null
+  }
+  if (path.charCodeAt(path.length - 1) < 32) {
+    path = path.substring(0, path.length - 1)
+  }
+  path = fs.realpathSync(path)
+  return path
+}
+
 export function getWorkingDirectoryFromPID (pid: number): string|null {
   if (process.platform === 'linux') {
     return fs.readlinkSync(`/proc/${pid}/cwd`)
   }
-  let result = getNative().getWorkingDirectoryFromPID(pid)
-  if (result) {
-    result = fs.realpathSync(result)
-  }
-  return result
+  return cleanupPath(getNative().getWorkingDirectoryFromPID(pid))
 }
 
 export function getWorkingDirectoryFromHandle (handle: number): string|null {
   if (process.platform !== 'win32') {
     throw new Error('getWorkingDirectoryFromHandle() is only available on Windows')
   }
-  let result = getNative().getWorkingDirectoryFromHandle(handle)
-  if (result) {
-    result = fs.realpathSync(result)
-  }
-  return result
+  return cleanupPath(getNative().getWorkingDirectoryFromHandle(handle))
 }
