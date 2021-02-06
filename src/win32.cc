@@ -3,12 +3,21 @@
 #include <windows.h>
 #include <winternl.h>
 
+
+typedef NTSTATUS(NTAPI* _NtQueryInformationProcess)(
+  HANDLE ProcessHandle,
+  PROCESSINFOCLASS ProcessInformationClass,
+  PVOID ProcessInformation,
+  ULONG ProcessInformationLength,
+  PULONG ReturnLength
+);
+
 Napi::Value throwError(std::string what,  const Napi::Env &env) {
   Napi::Error::New(env, what).ThrowAsJavaScriptException();
   return env.Null();
 }
 
-Napi::Value getWorkingDirectory(const HANDLE handle, const Napi::Env &env) {
+Napi::Value getWorkingDirectory(const HANDLE hProcess, const Napi::Env &env) {
   // By @segrey: https://github.com/rprichard/winpty/pull/159
   HMODULE ntdllHandle = GetModuleHandle(L"ntdll.dll");
   if (!ntdllHandle) {
@@ -19,7 +28,7 @@ Napi::Value getWorkingDirectory(const HANDLE handle, const Napi::Env &env) {
   BOOL wow;
   IsWow64Process(GetCurrentProcess(), &wow);
   if (wow) {
-    return throwError(L"Cannot fetch current directory for WoW64 process", env);
+    return throwError("Cannot fetch current directory for WoW64 process", env);
   }
 
   PROCESS_BASIC_INFORMATION pbi;
@@ -48,7 +57,7 @@ Napi::Value getWorkingDirectory(const HANDLE handle, const Napi::Env &env) {
   if (currentDirUnicodeStr.Length <= 0 || currentDirUnicodeStr.MaximumLength <= 0
     || currentDirUnicodeStr.Length >= currentDirUnicodeStr.MaximumLength || currentDirUnicodeStr.MaximumLength > 8192) {
     return throwError("Bad current directory: Length=" + std::to_string(currentDirUnicodeStr.Length)
-      + L", MaximumLength=" + std::to_string(currentDirUnicodeStr.MaximumLength), env);
+      + ", MaximumLength=" + std::to_string(currentDirUnicodeStr.MaximumLength), env);
   }
 
   LPWSTR lpCurrentDir = new WCHAR[currentDirUnicodeStr.MaximumLength / sizeof(WCHAR) + 1];
@@ -58,9 +67,9 @@ Napi::Value getWorkingDirectory(const HANDLE handle, const Napi::Env &env) {
     return throwError("Failed to read ProcessParameters.CurrentDirectory", env);
   }
 
-  std::wstring currentDirectory = lpCurrentDir;
+  auto result = Napi::String::New(env, reinterpret_cast<char16_t*>(lpCurrentDir));
   delete[] lpCurrentDir;
-  return Napi::String::New(env, currentDirectory);
+  return result;
 }
 
 Napi::Value getWorkingDirectoryFromPID(const Napi::CallbackInfo& info) {
@@ -75,7 +84,7 @@ Napi::Value getWorkingDirectoryFromPID(const Napi::CallbackInfo& info) {
 
 Napi::Value getWorkingDirectoryFromHandle(const Napi::CallbackInfo& info) {
   auto handle = (int64_t)info[0].ToNumber();
-  return getWorkingDirectory(h, info.Env());
+  return getWorkingDirectory((HANDLE)handle, info.Env());
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
