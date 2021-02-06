@@ -1,0 +1,31 @@
+{
+  "name": "process-working-directory",
+  "version": "1.0.0",
+  "main": "index.js",
+  "types": "index",
+  "author": "Eugene Pankov",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Eugeny/process-working-directory.git"
+  },
+  "homepage": "https://github.com/Eugeny/process-working-directory",
+  "bugs": {
+    "url": "https://github.com/Eugeny/process-working-directory/issues"
+  },
+  "os": [
+    "win32",
+    "darwin"
+  ],
+  "dependencies": {
+    "node-addon-api": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.12.14",
+    "node-gyp": "^6.0.1",
+    "typescript": "^3.7.3"
+  },
+  "scripts": {
+    "build": "tsc -d index.ts"
+  }
+}
