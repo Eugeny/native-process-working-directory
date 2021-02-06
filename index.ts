@@ -15,7 +15,6 @@ function cleanupPath (path: string) {
   if (path.charCodeAt(path.length - 1) < 32) {
     path = path.substring(0, path.length - 1)
   }
-  path = fs.realpathSync(path)
   return path
 }
 
